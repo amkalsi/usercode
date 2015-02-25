@@ -101,6 +101,7 @@ private:
 
     double l1mupt ;
     double l3mupt ;
+    double l3vvlisomupt ;
     double l3isomupt ;
     double calomet ;
     double calometID ;
@@ -129,6 +130,7 @@ char ctrig1[128];
 string strig1 ;
 string sl1mu ;
 string sl3mu ;
+string sl3vvlisomu ;
 string sl3isomu ;
 string scalomet ;
 string scalometID ;
@@ -151,6 +153,7 @@ tauptcut(iConfig.getUntrackedParameter<double>("tauPtCut", 0 )),
 strig1(iConfig.getUntrackedParameter<string>("triggerName1", "none" )),
 sl1mu(iConfig.getUntrackedParameter<string>("triggerL1MuName", "none" )),
 sl3mu(iConfig.getUntrackedParameter<string>("triggerL3MuName", "none" )),
+sl3vvlisomu(iConfig.getUntrackedParameter<string>("triggerL3VVLIsoMuName", "none" )),
 sl3isomu(iConfig.getUntrackedParameter<string>("triggerL3IsoMuName", "none" )),
 scalomet(iConfig.getUntrackedParameter<string>("triggerCaloMETName", "none" )),
 scalometID(iConfig.getUntrackedParameter<string>("triggerCaloMETIDName", "none" )),
@@ -168,6 +171,7 @@ processName = "TEST";
 
  mytree->Branch("l1mupt",&l1mupt,"l1mupt/D");
  mytree->Branch("l3mupt",&l3mupt,"l3mupt/D");
+ mytree->Branch("l3vvlisomupt",&l3vvlisomupt,"l3vvlisomupt/D");
  mytree->Branch("l3isomupt",&l3isomupt,"l3isomupt/D");
  mytree->Branch("calomet",&calomet,"calomet/D");
  mytree->Branch("calometID",&calometID,"calometID/D");
@@ -516,6 +520,7 @@ ak5genj2hltmatch = 0;
 
 l1mupt = -1;
 l3mupt = -1;
+l3vvlisomupt = -1;
 l3isomupt = -1;
 calomet = -1;
 calometID = -1;
@@ -525,6 +530,7 @@ pfmet = -1;
 
 bool fl1mu = false;
 bool fl3mu = false;
+bool fl3vvlisomu = false;
 bool fl3isomu = false;
 bool fcalomet = false;
 bool fcalometID = false;
@@ -592,6 +598,7 @@ if(isSignal){
 				}
 				fl1mu = false;
 				fl3mu = false;
+				fl3vvlisomu = false;
 				fl3isomu = false;
 				fcalomet = false;
 				fcalometID = false;
@@ -602,6 +609,7 @@ if(isSignal){
 					moduleLabel = moduleLabels.at(l);
 					if(moduleLabel.find(sl1mu) != std::string::npos) fl1mu = true;
 					if(moduleLabel.find(sl3mu) != std::string::npos) fl3mu = true;
+					if(moduleLabel.find(sl3vvlisomu) != std::string::npos) fl3vvlisomu = true;
 					if(moduleLabel.find(sl3isomu) != std::string::npos) fl3isomu = true;
 					if(moduleLabel.find(scalomet) != std::string::npos) fcalomet = true;
 					if(moduleLabel.find(scalometID) != std::string::npos) fcalometID = true;
@@ -638,6 +646,22 @@ if(isSignal){
 					        for (size_type i=0; i!=n2; ++i) {
 				        	        const TriggerObject& TO(TOC[KEYS[i]]);
 							if( l3mupt < TO.pt() ) l3mupt = TO.pt() ;
+        					}
+					} // filer size
+				}
+				if(fl3vvlisomu == true ){
+					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3vvlisomu,"",processName)));
+				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
+					        const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
+			        		const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
+				        	const size_type nI(VIDS.size());
+					        const size_type nK(KEYS.size());
+					        assert(nI==nK);
+        					const size_type n2(max(nI,nK));
+				        	const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
+					        for (size_type i=0; i!=n2; ++i) {
+				        	        const TriggerObject& TO(TOC[KEYS[i]]);
+							if( l3vvlisomupt < TO.pt() ) l3vvlisomupt = TO.pt() ;
         					}
 					} // filer size
 				}
