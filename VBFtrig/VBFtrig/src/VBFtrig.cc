@@ -60,12 +60,12 @@ private:
   double GenMET(edm::Handle<reco::GenParticleCollection>& genParticles);
   double GenHT(edm::Handle<reco::GenParticleCollection>& genParticles);
   std::pair <double, double> GenMjjDeta(edm::Handle<reco::GenParticleCollection>& genParticles, double, double);
-  std::pair <double, double> GenMuPtEta(edm::Handle<reco::GenParticleCollection>& genParticles, double);
+  std::pair <double, double> GenPtEta(edm::Handle<reco::GenParticleCollection>& genParticles, double, int);
   std::pair <double, double> GenTauPtEta(edm::Handle<reco::GenParticleCollection>& genParticles, double);
   std::pair <double, double> GenChi0PtEta(edm::Handle<reco::GenParticleCollection>& genParticles);
   std::pair <double, double> GenChiPmPtEta(edm::Handle<reco::GenParticleCollection>& genParticles);
-  void Ak5GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double detacut);
-  double Ak5GenHT(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double etacut);
+  void Ak4GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double detacut);
+  double Ak4GenHT(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double etacut);
 
   TTree* mytree;
 
@@ -77,19 +77,19 @@ private:
     double gendeta;
 
     double genmettrue;
-    double ak5genmjj ;
-    double ak5gendeta ;
-    double ak5genj1pt ;
-    double ak5genj2pt ;
-    double ak5genj1eta ;
-    double ak5genj2eta ;
-    double ak5genj1phi ;
-    double ak5genj2phi ;
-    int  ak5genj1hltmatch ;
-    int  ak5genj2hltmatch ;
+    double ak4genmjj ;
+    double ak4gendeta ;
+    double ak4genj1pt ;
+    double ak4genj2pt ;
+    double ak4genj1eta ;
+    double ak4genj2eta ;
+    double ak4genj1phi ;
+    double ak4genj2phi ;
+    int  ak4genj1hltmatch ;
+    int  ak4genj2hltmatch ;
 
-    double genmupt ;
-    double genmueta ;
+    double genleppt ;
+    double genlepeta ;
     double gentaupt ;
     double gentaueta ;
 
@@ -99,10 +99,11 @@ private:
     double genchipmeta ;
 
 
-    double l1mupt ;
-    double l3mupt ;
-    double l3vvlisomupt ;
-    double l3isomupt ;
+    double l1pt ;
+    double l3leppt1 ;
+    double l3leppt2 ;
+    double l3leppt3 ;
+
     double calomet ;
     double calometID ;
     double ht ;
@@ -114,10 +115,12 @@ edm::InputTag triggerResultsTag_;
 edm::InputTag genJetTag_;
 edm::InputTag genMETTag_;
 
+int leptonPid ;
+
 double jetEtaHT ;
 double jetptcut ;
 double detacut ;
-double muptcut ;
+double lepptcut ;
 double tauptcut ;
 // for trigger
 string processName;// = "HLT";
@@ -128,10 +131,11 @@ unsigned int ntrig;
 int trig1;
 char ctrig1[128];
 string strig1 ;
-string sl1mu ;
-string sl3mu ;
-string sl3vvlisomu ;
-string sl3isomu ;
+string sl1name ;
+string sl3lep1 ;
+string sl3lep2 ;
+string sl3lep3 ;
+
 string scalomet ;
 string scalometID ;
 string sht ;
@@ -145,16 +149,17 @@ isSignal(iConfig.getUntrackedParameter<bool>("isSignal", false  )),
 triggerResultsTag_(iConfig.getParameter<edm::InputTag>("triggerResults")) ,
 genJetTag_(iConfig.getParameter<edm::InputTag>("genJetTag")),
 genMETTag_(iConfig.getParameter<edm::InputTag>("genMETTag")),
+leptonPid(iConfig.getUntrackedParameter<int>("leptonPid", 0 )),
 jetEtaHT(iConfig.getUntrackedParameter<double>("jetEtaHT", 0 )),
 jetptcut(iConfig.getUntrackedParameter<double>("jetPtCut", 0 )),
 detacut(iConfig.getUntrackedParameter<double>("dEtaCut", 0 )),
-muptcut(iConfig.getUntrackedParameter<double>("muPtCut", 0 )),
+lepptcut(iConfig.getUntrackedParameter<double>("lepPtCut", 0 )),
 tauptcut(iConfig.getUntrackedParameter<double>("tauPtCut", 0 )),
 strig1(iConfig.getUntrackedParameter<string>("triggerName1", "none" )),
-sl1mu(iConfig.getUntrackedParameter<string>("triggerL1MuName", "none" )),
-sl3mu(iConfig.getUntrackedParameter<string>("triggerL3MuName", "none" )),
-sl3vvlisomu(iConfig.getUntrackedParameter<string>("triggerL3VVLIsoMuName", "none" )),
-sl3isomu(iConfig.getUntrackedParameter<string>("triggerL3IsoMuName", "none" )),
+sl1name(iConfig.getUntrackedParameter<string>("triggerL1Name", "none" )),
+sl3lep1(iConfig.getUntrackedParameter<string>("triggerL3LeptonName1", "none" )),
+sl3lep2(iConfig.getUntrackedParameter<string>("triggerL3LeptonName2", "none" )),
+sl3lep3(iConfig.getUntrackedParameter<string>("triggerL3LeptonName3", "none" )),
 scalomet(iConfig.getUntrackedParameter<string>("triggerCaloMETName", "none" )),
 scalometID(iConfig.getUntrackedParameter<string>("triggerCaloMETIDName", "none" )),
 sht(iConfig.getUntrackedParameter<string>("triggerHTName", "none" )),
@@ -169,10 +174,11 @@ processName = "TEST";
     mytree->Branch("trig1",    &trig1,  "trig1/I");
     mytree->Branch("ctrig1",    &ctrig1,  "ctrig1/C");
 
- mytree->Branch("l1mupt",&l1mupt,"l1mupt/D");
- mytree->Branch("l3mupt",&l3mupt,"l3mupt/D");
- mytree->Branch("l3vvlisomupt",&l3vvlisomupt,"l3vvlisomupt/D");
- mytree->Branch("l3isomupt",&l3isomupt,"l3isomupt/D");
+ mytree->Branch("l1pt",&l1pt,"l1pt/D");
+ mytree->Branch("l3leppt1",&l3leppt1,"l3leppt1/D");
+ mytree->Branch("l3leppt2",&l3leppt2,"l3leppt2/D");
+ mytree->Branch("l3leppt3",&l3leppt3,"l3leppt3/D");
+
  mytree->Branch("calomet",&calomet,"calomet/D");
  mytree->Branch("calometID",&calometID,"calometID/D");
  mytree->Branch("ht",&ht,"ht/D");
@@ -181,8 +187,8 @@ processName = "TEST";
 
 if(isSignal == true){
  mytree->Branch("genstablemet",&genstablemet,"genstablemet/D");
- mytree->Branch("genmupt",&genmupt,"genmupt/D");
- mytree->Branch("genmueta",&genmueta,"genmueta/D");
+ mytree->Branch("genleppt",&genleppt,"genleppt/D");
+ mytree->Branch("genlepeta",&genlepeta,"genlepeta/D");
  mytree->Branch("gentaupt",&gentaupt,"gentaupt/D");
  mytree->Branch("gentaueta",&gentaueta,"gentaueta/D");
 
@@ -197,16 +203,16 @@ if(isSignal == true){
  mytree->Branch("gendeta",&gendeta,"gendeta/D");
  mytree->Branch("genmettrue",&genmettrue,"genmettrue/D");
 
- mytree->Branch("ak5genmjj",&ak5genmjj,"ak5genmjj/D");
- mytree->Branch("ak5gendeta",&ak5gendeta,"ak5gendeta/D");
- mytree->Branch("ak5genj1pt",&ak5genj1pt,"ak5genj1pt/D");
- mytree->Branch("ak5genj2pt",&ak5genj2pt,"ak5genj2pt/D");
- mytree->Branch("ak5genj1eta",&ak5genj1eta,"ak5genj1eta/D");
- mytree->Branch("ak5genj2eta",&ak5genj2eta,"ak5genj2eta/D");
- mytree->Branch("ak5genj1phi",&ak5genj1phi,"ak5genj1phi/D");
- mytree->Branch("ak5genj2phi",&ak5genj2phi,"ak5genj2phi/D");
- mytree->Branch("ak5genj1hltmatch",&ak5genj1hltmatch,"ak5genj1hltmatch/I");
- mytree->Branch("ak5genj2hltmatch",&ak5genj2hltmatch,"ak5genj2hltmatch/I");
+ mytree->Branch("ak4genmjj",&ak4genmjj,"ak4genmjj/D");
+ mytree->Branch("ak4gendeta",&ak4gendeta,"ak4gendeta/D");
+ mytree->Branch("ak4genj1pt",&ak4genj1pt,"ak4genj1pt/D");
+ mytree->Branch("ak4genj2pt",&ak4genj2pt,"ak4genj2pt/D");
+ mytree->Branch("ak4genj1eta",&ak4genj1eta,"ak4genj1eta/D");
+ mytree->Branch("ak4genj2eta",&ak4genj2eta,"ak4genj2eta/D");
+ mytree->Branch("ak4genj1phi",&ak4genj1phi,"ak4genj1phi/D");
+ mytree->Branch("ak4genj2phi",&ak4genj2phi,"ak4genj2phi/D");
+ mytree->Branch("ak4genj1hltmatch",&ak4genj1hltmatch,"ak4genj1hltmatch/I");
+ mytree->Branch("ak4genj2hltmatch",&ak4genj2hltmatch,"ak4genj2hltmatch/I");
 }
 
 }
@@ -381,14 +387,14 @@ pair <double, double> VBFtrig::GenMjjDeta(edm::Handle<reco::GenParticleCollectio
         return mymjjdeta;
 }
 
-pair <double, double> VBFtrig::GenMuPtEta(edm::Handle<reco::GenParticleCollection>& genParticles, double ptcut){
+pair <double, double> VBFtrig::GenPtEta(edm::Handle<reco::GenParticleCollection>& genParticles, double ptcut, int thispid){
         pair <double, double> mymupteta;
         mymupteta.first  = 0;
         mymupteta.second = 0;
         vector <unsigned int > vit;
         for( unsigned int i = 0; i < genParticles->size(); i++ ) {
                 int id = abs(genParticles->at(i).pdgId() ); // child's abs id
-                if(id == 13  && genParticles->at(i).status() == 1 ){ // stable
+                if(id == thispid  && genParticles->at(i).status() == 1 ){ // stable
                         if( fabs( genParticles->at( i ) . eta() ) < 2.5){
                                 if( genParticles->at( i ) . pt() > ptcut ){
                                         vit.push_back( i );
@@ -401,11 +407,11 @@ pair <double, double> VBFtrig::GenMuPtEta(edm::Handle<reco::GenParticleCollectio
 		if( mom != NULL){
 			int momid = abs( mom -> pdgId()) ;
 			if ( abs( mom -> pdgId()) != 15 ){ 
-				while ( momid == 13 ){
+				while ( momid == thispid ){
                 			const Candidate * granma = mom -> mother();
 					mom = granma;
 					momid = abs( mom -> pdgId() ) ;
-					if ( momid != 13 ) break;
+					if ( momid != thispid ) break;
 				}
 			}
                         if( momid == 15  ){ // tau ancestor
@@ -440,7 +446,7 @@ pair <double, double> VBFtrig::GenTauPtEta(edm::Handle<reco::GenParticleCollecti
 }
 
 
-void VBFtrig::Ak5GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double detacut){
+void VBFtrig::Ak4GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double detacut){
   for( unsigned int i = 0; i < genJets -> size(); i++){
 	if( fabs(genJets -> at(i).eta()) < 5.0 ){
 		if( genJets -> at(i).pt() > jetptcut ){
@@ -451,15 +457,15 @@ void VBFtrig::Ak5GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double
 							if( genJets -> at(i).eta() *  genJets -> at(j).eta()  < 0 ){
 								double deleta = fabs(  genJets -> at(i).eta() - genJets -> at(j).eta());
 								double dijms = (  genJets -> at(i).p4() + genJets -> at(j).p4()).mass();
-								if( deleta > detacut && dijms > ak5genmjj) {
-									ak5genmjj = dijms ;
-									ak5gendeta = deleta;
-									ak5genj1eta = genJets -> at(i).eta() ;
-									ak5genj1phi = genJets -> at(i).phi() ;
-									ak5genj1pt = genJets -> at(i).pt() ;
-									ak5genj2eta = genJets -> at(j).eta() ;
-									ak5genj2phi = genJets -> at(j).phi() ;
-									ak5genj2pt = genJets -> at(j).pt() ;
+								if( deleta > detacut && dijms > ak4genmjj) {
+									ak4genmjj = dijms ;
+									ak4gendeta = deleta;
+									ak4genj1eta = genJets -> at(i).eta() ;
+									ak4genj1phi = genJets -> at(i).phi() ;
+									ak4genj1pt = genJets -> at(i).pt() ;
+									ak4genj2eta = genJets -> at(j).eta() ;
+									ak4genj2phi = genJets -> at(j).phi() ;
+									ak4genj2pt = genJets -> at(j).pt() ;
 								}
 							}
 						}
@@ -471,7 +477,7 @@ void VBFtrig::Ak5GenMjjDeta(edm::Handle<reco::GenJetCollection>& genJets, double
   }
 }
 
-double VBFtrig::Ak5GenHT(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double etacut){
+double VBFtrig::Ak4GenHT(edm::Handle<reco::GenJetCollection>& genJets, double jetptcut, double etacut){
 	double tempht = 0;
 	for( unsigned int i = 0; i < genJets -> size(); i++){
         	if( fabs(genJets -> at(i).eta()) < etacut ){
@@ -496,8 +502,8 @@ genmjj = -1;
 gendeta = 99;
 genmettrue = -1;
 
-genmueta = 99;
-genmupt = -1;
+genlepeta = 99;
+genleppt = -1;
 gentaueta = 99;
 gentaupt = -1;
 
@@ -506,32 +512,34 @@ genchi0pt = -1;
 genchipmeta = 99;
 genchipmpt = -1;
 
-ak5genmjj = -1;
-ak5gendeta = -1;
-ak5genj1pt = -1;
-ak5genj2pt = -1;
-ak5genj1eta = 99;
-ak5genj2eta = 99;
-ak5genj1phi = 9;
-ak5genj2phi = 9;
-ak5genj1hltmatch = 0;
-ak5genj2hltmatch = 0;
+ak4genmjj = -1;
+ak4gendeta = -1;
+ak4genj1pt = -1;
+ak4genj2pt = -1;
+ak4genj1eta = 99;
+ak4genj2eta = 99;
+ak4genj1phi = 9;
+ak4genj2phi = 9;
+ak4genj1hltmatch = 0;
+ak4genj2hltmatch = 0;
 }
 
-l1mupt = -1;
-l3mupt = -1;
-l3vvlisomupt = -1;
-l3isomupt = -1;
+l1pt = -1;
+l3leppt1 = -1;
+l3leppt2 = -1;
+l3leppt3 = -1;
+
 calomet = -1;
 calometID = -1;
 ht = -1;
 dijet = -1;
 pfmet = -1;
 
-bool fl1mu = false;
-bool fl3mu = false;
-bool fl3vvlisomu = false;
-bool fl3isomu = false;
+bool fl1 = false;
+bool fl3lep1 = false;
+bool fl3lep2 = false;
+bool fl3lep3 = false;
+
 bool fcalomet = false;
 bool fcalometID = false;
 bool fht = false;
@@ -546,8 +554,8 @@ if(isSignal){
   edm::Handle<reco::GenJetCollection> genJets;
   iEvent.getByLabel(genJetTag_, genJets);
   if( genJets.isValid() ){
-	Ak5GenMjjDeta( genJets, jetptcut, detacut);
-	genht = Ak5GenHT( genJets, jetptcut, jetEtaHT);
+	Ak4GenMjjDeta( genJets, jetptcut, detacut);
+	genht = Ak4GenHT( genJets, jetptcut, jetEtaHT);
   }
   edm::Handle<reco::GenParticleCollection> genParticles;
   iEvent.getByLabel("genParticles", genParticles);
@@ -558,9 +566,9 @@ if(isSignal){
         pair <double, double> pmjjdeta = GenMjjDeta(genParticles, jetptcut, detacut);
         genmjj  = pmjjdeta.first;
         gendeta  = pmjjdeta.second;
-        pair <double, double> pmupteta = GenMuPtEta(genParticles, muptcut);
-        genmupt  = pmupteta.first;
-        genmueta = pmupteta.second;
+        pair <double, double> pmupteta = GenPtEta(genParticles, lepptcut, leptonPid);
+        genleppt  = pmupteta.first;
+        genlepeta = pmupteta.second;
         pair <double, double> ptaupteta = GenTauPtEta(genParticles, tauptcut);
         gentaupt  = ptaupteta.first;
         gentaueta = ptaupteta.second;
@@ -596,10 +604,11 @@ if(isSignal){
 					trig1 = 1;
                         		snprintf(ctrig1, 127, "%s", hltConfig_.triggerNames().at(u).c_str() );
 				}
-				fl1mu = false;
-				fl3mu = false;
-				fl3vvlisomu = false;
-				fl3isomu = false;
+				fl1 = false;
+				fl3lep1 = false;
+				fl3lep2 = false;
+				fl3lep3 = false;
+
 				fcalomet = false;
 				fcalometID = false;
 				fht = false;
@@ -607,18 +616,19 @@ if(isSignal){
 				fpfmet = false;
 				for(unsigned int l = 0; l < moduleLabels.size(); l++){
 					moduleLabel = moduleLabels.at(l);
-					if(moduleLabel.find(sl1mu) != std::string::npos) fl1mu = true;
-					if(moduleLabel.find(sl3mu) != std::string::npos) fl3mu = true;
-					if(moduleLabel.find(sl3vvlisomu) != std::string::npos) fl3vvlisomu = true;
-					if(moduleLabel.find(sl3isomu) != std::string::npos) fl3isomu = true;
+					if(moduleLabel.find(sl1name) != std::string::npos) fl1 = true;
+					if(moduleLabel.find(sl3lep1) != std::string::npos) fl3lep1 = true;
+					if(moduleLabel.find(sl3lep2) != std::string::npos) fl3lep2 = true;
+					if(moduleLabel.find(sl3lep3) != std::string::npos) fl3lep3 = true;
+
 					if(moduleLabel.find(scalomet) != std::string::npos) fcalomet = true;
 					if(moduleLabel.find(scalometID) != std::string::npos) fcalometID = true;
 					if(moduleLabel.find(sht) != std::string::npos) fht = true;
 					if(moduleLabel.find(sdijet) != std::string::npos) fdijet = true;
 					if(moduleLabel.find(spfmet) != std::string::npos) fpfmet = true;
 				}
-				if(fl1mu == true ){
-					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl1mu,"",processName)));
+				if(fl1 == true ){
+					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl1name,"",processName)));
 				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
 					        const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
 			        		const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
@@ -629,12 +639,12 @@ if(isSignal){
 				        	const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
 					        for (size_type i=0; i!=n2; ++i) {
 				        	        const TriggerObject& TO(TOC[KEYS[i]]);
-							if( l1mupt < TO.pt() ) l1mupt = TO.pt() ;
+							if( l1pt < TO.pt() ) l1pt = TO.pt() ;
         					}
 					} // filer size
 				}
-				if(fl3mu == true ){
-					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3mu,"",processName)));
+				if(fl3lep1 == true ){
+					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3lep1,"",processName)));
 				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
 					        const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
 			        		const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
@@ -645,12 +655,13 @@ if(isSignal){
 				        	const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
 					        for (size_type i=0; i!=n2; ++i) {
 				        	        const TriggerObject& TO(TOC[KEYS[i]]);
-							if( l3mupt < TO.pt() ) l3mupt = TO.pt() ;
+							if( l3leppt1 < TO.pt() ) l3leppt1 = TO.pt() ;
         					}
 					} // filer size
 				}
-				if(fl3vvlisomu == true ){
-					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3vvlisomu,"",processName)));
+
+				if(fl3lep2 == true ){
+					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3lep2,"",processName)));
 				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
 					        const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
 			        		const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
@@ -661,12 +672,12 @@ if(isSignal){
 				        	const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
 					        for (size_type i=0; i!=n2; ++i) {
 				        	        const TriggerObject& TO(TOC[KEYS[i]]);
-							if( l3vvlisomupt < TO.pt() ) l3vvlisomupt = TO.pt() ;
+							if( l3leppt2 < TO.pt() ) l3leppt2 = TO.pt() ;
         					}
 					} // filer size
 				}
-				if(fl3isomu == true ){
-					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3isomu,"",processName)));
+				if(fl3lep3 == true ){
+					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(sl3lep3,"",processName)));
 				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
 					        const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
 			        		const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
@@ -677,10 +688,11 @@ if(isSignal){
 				        	const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
 					        for (size_type i=0; i!=n2; ++i) {
 				        	        const TriggerObject& TO(TOC[KEYS[i]]);
-							if( l3isomupt < TO.pt() ) l3isomupt = TO.pt() ;
+							if( l3leppt3 < TO.pt() ) l3leppt3 = TO.pt() ;
         					}
 					} // filer size
 				}
+
 				if(fcalomet == true ){
 					const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(scalomet,"",processName)));
 				        if (filterIndex < triggerEventHandle_->sizeFilters() ){
@@ -744,17 +756,17 @@ if(isSignal){
 							if( TO1.pt() > jetptcut ){
 if(isSignal){
 // now match genjets to hlt jets
-	if( ak5genj1hltmatch == 0 && ak5genj1eta != 99 && ak5genj1phi != 9){
-		double detajj = ak5genj1eta - TO1.eta();
-		double dphijj = ak5genj1phi - TO1.phi();
+	if( ak4genj1hltmatch == 0 && ak4genj1eta != 99 && ak4genj1phi != 9){
+		double detajj = ak4genj1eta - TO1.eta();
+		double dphijj = ak4genj1phi - TO1.phi();
 		double drjj = sqrt( detajj*detajj + dphijj*dphijj);
-		if( drjj < 0.5) ak5genj1hltmatch = 1;
+		if( drjj < 0.5) ak4genj1hltmatch = 1;
 	}
-	if( ak5genj2hltmatch == 0 && ak5genj2eta != 99 && ak5genj2phi != 9){
-		double detajj = ak5genj2eta - TO1.eta();
-		double dphijj = ak5genj2phi - TO1.phi();
+	if( ak4genj2hltmatch == 0 && ak4genj2eta != 99 && ak4genj2phi != 9){
+		double detajj = ak4genj2eta - TO1.eta();
+		double dphijj = ak4genj2phi - TO1.phi();
 		double drjj = sqrt( detajj*detajj + dphijj*dphijj);
-		if( drjj < 0.5) ak5genj2hltmatch = 1;
+		if( drjj < 0.5) ak4genj2hltmatch = 1;
 	}
 // 
 }
